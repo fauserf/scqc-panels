@@ -101,6 +101,7 @@ intersphinx_mapping = {
     "anndata": ("https://anndata.scverse.org/en/stable/", None),
     "scanpy": ("https://scanpy.scverse.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
 }
 
 # List of patterns, relative to source directory, that match files and

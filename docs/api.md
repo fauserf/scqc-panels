@@ -9,8 +9,9 @@
 .. autosummary::
     :toctree: generated
 
-    pp.basic_preproc
-    pp.elaborate_example
+    pp.add_malat1_fraction
+    pp.add_ribosomal_score
+    pp.compute_qc_metrics
 ```
 
 ## Tools
@@ -34,6 +35,5 @@
 .. autosummary::
     :toctree: generated
 
-    pl.basic_plot
-    pl.BasicClass
+    pl.qc_panel
 ```
