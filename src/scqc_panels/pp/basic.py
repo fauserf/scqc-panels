@@ -1,79 +1,144 @@
-from collections.abc import Callable, Iterable
+"""Preprocessing / QC metric functions."""
+
+from __future__ import annotations
+
+import re
+from typing import cast
 
 import numpy as np
 from anndata import AnnData
 
+__all__ = ["add_malat1_fraction", "add_ribosomal_score", "compute_qc_metrics"]
 
-def basic_preproc(adata: AnnData) -> int:
-    """Run a basic preprocessing on the AnnData object.
+# Matches ribosomal protein genes, e.g. RPS6, RPL10 (small/large subunit).
+# Computed dynamically against adata.var_names rather than a hardcoded gene
+# list, so it works regardless of species or exact naming convention.
+_RIBO_PATTERN = re.compile(r"^RP[SL]\d", flags=re.IGNORECASE)
+
+
+def add_malat1_fraction(
+    adata: AnnData,
+    *,
+    malat1_names: tuple[str, ...] = ("MALAT1",),
+    layer: str | None = None,
+    inplace: bool = True,
+) -> np.ndarray | None:
+    """Compute the fraction of counts attributable to MALAT1 per cell.
+
+    A high MALAT1 fraction is commonly used as a QC marker of nuclear or
+    ambient RNA contamination and cell damage in single-cell RNA-seq.
 
     Parameters
     ----------
     adata
-        The AnnData object to preprocess.
+        Annotated data matrix. Genes are expected in ``adata.var_names``.
+    malat1_names
+        Gene symbol(s) to treat as MALAT1 (multiple names cover naming
+        variants/aliases across references).
+    layer
+        Layer to use for counts. Defaults to ``adata.X``.
+    inplace
+        If ``True`` (default), store the result in
+        ``adata.obs["pct_counts_malat1"]`` and return ``None``. If
+        ``False``, return the array instead of modifying `adata`.
 
     Returns
     -------
-    Some integer value.
+    ``None`` if ``inplace=True``, otherwise a 1D array of per-cell
+    percentages.
     """
-    print("Implement a preprocessing function here.")
-    return 0
+    matrix = adata.X if layer is None else adata.layers[layer]
+    if matrix is None:
+        msg = "adata.X is None; pass `layer` pointing to a valid matrix."
+        raise ValueError(msg)
+    matrix = cast("np.ndarray", matrix)
+
+    is_malat1 = adata.var_names.isin(malat1_names)
+    if not is_malat1.any():
+        msg = f"None of {malat1_names!r} found in adata.var_names."
+        raise ValueError(msg)
+
+    total_counts = np.asarray(matrix.sum(axis=1)).ravel()
+    malat1_counts = np.asarray(matrix[:, is_malat1].sum(axis=1)).ravel()
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pct = np.where(total_counts > 0, malat1_counts / total_counts * 100, 0.0)
+
+    if inplace:
+        adata.obs["pct_counts_malat1"] = pct
+        return None
+    return pct
 
 
-def elaborate_example(
-    items: Iterable[AnnData],
-    transform: Callable[[np.ndarray], str],
-    *,  # arguments after the asterisk are keyword-only
-    layer_key: str | None = None,
-    # Only specify defaults and types in the signature, not the docstring!
-    max_items: int = 100,
-) -> list[str]:
-    r"""A method with a more complex docstring.
+def add_ribosomal_score(
+    adata: AnnData,
+    *,
+    layer: str | None = None,
+    inplace: bool = True,
+) -> np.ndarray | None:
+    r"""Compute the fraction of counts from cytosolic ribosomal protein genes.
 
-    This is where you add more details.
-    Try to support general container classes such as Sequence, Mapping, or Collection
-    where possible to ensure that your functions can be widely used.
-
-    Data science means there’s lots of math too:
-
-    ..  math::
-
-        x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}
+    Genes are matched dynamically against ``adata.var_names`` using the
+    pattern ``^RP[SL]\\d`` (e.g. ``RPS6``, ``RPL10``), covering both the
+    small (RPS) and large (RPL) ribosomal subunit protein-coding genes.
 
     Parameters
     ----------
-    items
-        AnnData objects to process.
-    transform
-        Function to transform each item to string.
-    layer_key
-        Optional layer key to access matrix to apply transformation on.
-    max_items
-        Maximum number of items to process.
+    adata
+        Annotated data matrix.
+    layer
+        Layer to use for counts. Defaults to ``adata.X``.
+    inplace
+        If ``True`` (default), store the result in
+        ``adata.obs["pct_counts_ribo"]`` (and mark matched genes in
+        ``adata.var["ribo"]``) and return ``None``. If ``False``, return
+        the array instead.
 
     Returns
     -------
-    List of transformed string items.
-
-    Examples
-    --------
-    >>> elaborate_example(
-    ...     [adata],
-    ...     lambda vals: f"Statistics: mean={vals.mean():.2f}, max={vals.max():.2f}",
-    ... )
-    ['Statistics: mean=1.24, max=8.75']
+    ``None`` if ``inplace=True``, otherwise a 1D array of per-cell
+    percentages.
     """
-    result: list[str] = []
+    matrix = adata.X if layer is None else adata.layers[layer]
+    if matrix is None:
+        msg = "adata.X is None; pass `layer` pointing to a valid matrix."
+        raise ValueError(msg)
+    matrix = cast("np.ndarray", matrix)
 
-    for item in items:
-        matrix = item.layers[layer_key]
-        if not isinstance(matrix, np.ndarray):
-            msg = f"Item {item} matrix is not a NumPy array but of type {matrix.__class__}."
-            raise ValueError(msg)
+    is_ribo = np.array([bool(_RIBO_PATTERN.match(name)) for name in adata.var_names])
 
-        result.append(transform(matrix.flatten()))  # type: ignore[attr-defined]
+    total_counts = np.asarray(matrix.sum(axis=1)).ravel()
+    ribo_counts = np.asarray(matrix[:, is_ribo].sum(axis=1)).ravel() if is_ribo.any() else np.zeros_like(total_counts)
 
-        if len(result) >= max_items:
-            break
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pct = np.where(total_counts > 0, ribo_counts / total_counts * 100, 0.0)
 
-    return result
+    if inplace:
+        adata.var["ribo"] = is_ribo
+        adata.obs["pct_counts_ribo"] = pct
+        return None
+    return pct
+
+
+def compute_qc_metrics(
+    adata: AnnData,
+    *,
+    malat1_names: tuple[str, ...] = ("MALAT1",),
+    layer: str | None = None,
+) -> None:
+    """Compute all QC diagnostic metrics used by :func:`scqc_panels.pl.qc_panel`.
+
+    Convenience wrapper running :func:`add_malat1_fraction` and
+    :func:`add_ribosomal_score` in one call.
+
+    Parameters
+    ----------
+    adata
+        Annotated data matrix.
+    malat1_names
+        Gene symbol(s) to treat as MALAT1.
+    layer
+        Layer to use for counts. Defaults to ``adata.X``.
+    """
+    add_malat1_fraction(adata, malat1_names=malat1_names, layer=layer)
+    add_ribosomal_score(adata, layer=layer)
