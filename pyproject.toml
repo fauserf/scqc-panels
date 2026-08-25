@@ -5,7 +5,10 @@ requires = [ "hatchling" ]
 [project]
 name = "scqc-panels"
 version = "0.0.1"
-description = ": Standardised QC diagnostic panels for single-cell data, including MALAT1 fraction and ribosomal protein (cytosol) score metrics."
+description = """\
+  Standardised QC diagnostic panels for single-cell data, including MALAT1 fraction and ribosomal protein (cytosol) \
+  score metrics.\
+  """
 readme = "README.md"
 license = { file = "LICENSE" }
 maintainers = [
