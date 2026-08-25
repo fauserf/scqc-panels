@@ -1,0 +1,44 @@
+{
+  "template": "https://github.com/scverse/cookiecutter-scverse",
+  "commit": "eb4523fde2e18bcfc121ff2cd722c9037ff8b910",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "scqc-panels",
+      "package_name": "scqc_panels",
+      "project_description": ": Standardised QC diagnostic panels for single-cell data, including MALAT1 fraction and ribosomal protein (cytosol) score metrics.",
+      "author_full_name": "Felix Fauser",
+      "author_email": "felix.fauser02@gmail.com",
+      "github_user": "fauserf",
+      "github_repo": "scqc-panels",
+      "license": "BSD 3-Clause License",
+      "ide_integration": true,
+      "issue_categorization": "labels",
+      "_copy_without_render": [
+        ".github/workflows/build.yaml",
+        ".github/workflows/test.yaml",
+        "docs/_templates/autosummary/**.rst"
+      ],
+      "_exclude_on_template_update": [
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "docs/api.md",
+        "docs/index.md",
+        "docs/notebooks/example.ipynb",
+        "docs/references.bib",
+        "docs/references.md",
+        "src/**",
+        "tests/**"
+      ],
+      "_render_devdocs": false,
+      "_jinja2_env_vars": {
+        "lstrip_blocks": true,
+        "trim_blocks": true
+      },
+      "_template": "https://github.com/scverse/cookiecutter-scverse",
+      "_commit": "eb4523fde2e18bcfc121ff2cd722c9037ff8b910"
+    }
+  },
+  "directory": null
+}
