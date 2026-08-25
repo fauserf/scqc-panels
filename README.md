@@ -44,6 +44,18 @@ Choose from the options below to install scqc-panels:
    pip install git+https://github.com/fauserf/scqc-panels.git  # (or `uv add`)
    ```
 
+## Usage
+
+```python
+import scanpy as sc
+import scqc_panels as scqc
+
+adata = sc.read_h5ad("your_data.h5ad")
+scqc.pp.compute_qc_metrics(adata)
+scqc.pl.qc_panel(adata)
+```
+
+
 ## Release notes
 
 See the [changelog][].
