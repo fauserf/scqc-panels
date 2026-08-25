@@ -6,7 +6,7 @@
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/fauserf/scqc-panels/test.yaml?branch=main
 [badge-docs]: https://app.readthedocs.org/projects/scqc-panels/badge/
 
-: Standardised QC diagnostic panels for single-cell data, including MALAT1 fraction and ribosomal protein (cytosol) score metrics.
+Standardised QC diagnostic panels for single-cell data, including MALAT1 fraction and ribosomal protein (cytosol) score metrics.
 
 ## Getting started
 
